@@ -2,12 +2,33 @@ class Feria {
 
 	const property puestos = []
 
+	method agregarPuesto(puesto) {
+		puestos.add(puesto)
+	}
+
 	method cualesPuedeVisitar(persona) {
 		return puestos.filter({ puesto => puesto.puedeSerUsado(persona) })
 	}
 
 	method visitoAlmenosUnPuesto(persona) {
 		return puestos.any({ puesto => puesto.fueVisitadoPor(persona) })
+	}
+
+	method cuantosApadrina(municipio) {
+		return puestos.count({ puesto => puesto.municipio().equals(municipio) })
+	}
+
+	method municipiosApadrinantes() {
+		return puestos.map({ puesto => puesto.municipio() }).asSet().asList()
+	}
+
+	method promedioRecaudacioinMunicipios() {
+		const cantidadDeMunicipios = self.municipiosApadrinantes().size()
+		return self.municipiosApadrinantes().sum({ municipio => municipio.recaudado() }) / cantidadDeMunicipios
+	}
+
+	method municipioMenosRecaudo() {
+		return self.municipiosApadrinantes().min({ municipio => municipio.recaudado() })
 	}
 
 }
@@ -53,7 +74,7 @@ class Infantil inherits Puesto {
 
 class Comercial inherits Puesto {
 
-	var property costo
+	var property costo = 10
 
 	override method puedeSerUsado(persona) {
 		return persona.dinero() >= costo
@@ -69,20 +90,25 @@ class Comercial inherits Puesto {
 class Impositivo inherits Puesto {
 
 	override method puedeSerUsado(persona) {
-		return self.esResidente(persona) and persona.tieneDeuda() and persona.puedePagar(municipio.montoExigible())
+		return self.esResidente(persona) and persona.tieneDeuda() and persona.puedePagar(municipio.montoExigible(persona))
 	}
 
 	override method usar(persona) {
 		super(persona)
+		municipio.recibirPago(persona)
+			// el órden de recibir pago y pagar deuda importa, porque si primero paga la deuda
+		persona.pagarDeuda()
 	}
 
 	method esResidente(persona) {
-		return municipio == persona.municipio()
+		return persona.municipio().equals(municipio)
 	}
 
 }
 
 class Municipio {
+
+	var property recaudado = 0
 
 	method montoExigible(persona) {
 		return self.montoBruto(persona) - self.montoProrrogable(persona)
@@ -98,6 +124,10 @@ class Municipio {
 
 	method condicionEdad(persona) {
 		return persona.esMayorQue(75)
+	}
+
+	method recibirPago(persona) {
+		recaudado += self.montoExigible(persona)
 	}
 
 }
@@ -147,6 +177,16 @@ class Visitante {
 
 	method esMayorQue(numero) {
 		return edad > numero
+	}
+
+	method puedePagar(monto) {
+		return dinero >= monto
+	}
+
+	method pagarDeuda() {
+		const monto = municipio.montoExigible(self)
+		self.pagar(monto)
+		deudaMunicipal -= monto
 	}
 
 }
