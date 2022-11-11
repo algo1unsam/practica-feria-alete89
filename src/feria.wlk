@@ -97,6 +97,7 @@ class Impositivo inherits Puesto {
 		super(persona)
 		municipio.recibirPago(persona)
 			// el órden de recibir pago y pagar deuda importa, porque si primero paga la deuda
+			// luego municipio.recibirPago() ya no encontraría deuda
 		persona.pagarDeuda()
 	}
 
